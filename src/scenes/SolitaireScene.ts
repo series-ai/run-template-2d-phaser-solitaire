@@ -389,7 +389,12 @@ export default class SolitaireScene extends Phaser.Scene {
     // Check tableau
     if (!validDrop) {
       for (const pile of this.tableau) {
-        const targetY = pile.y + (pile.cards.length > 0 ? pile.cards.length * this.STACK_OFFSET_Y : 0);
+        // Calculate where the next card would go by summing up all card offsets
+        let targetY = pile.y;
+        for (let i = 0; i < pile.cards.length; i++) {
+          targetY += pile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+        }
+
         const distance = Phaser.Math.Distance.Between(
           topCard.container.x,
           topCard.container.y,
