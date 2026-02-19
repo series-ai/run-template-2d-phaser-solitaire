@@ -249,11 +249,16 @@ export default class SolitaireScene extends Phaser.Scene {
   private updateAllCards() {
     // Update tableau
     this.tableau.forEach((pile) => {
+      let currentY = pile.y;
       pile.cards.forEach((card, rowIndex) => {
-        const y = pile.y + (card.faceUp ? rowIndex * this.STACK_OFFSET_Y : rowIndex * this.FACE_DOWN_OFFSET_Y);
-        card.container.setPosition(pile.x, y);
+        card.container.setPosition(pile.x, currentY);
         card.container.setDepth(rowIndex);
         this.drawCard(card);
+
+        // Calculate next Y position based on current card's state
+        if (rowIndex < pile.cards.length - 1) {
+          currentY += card.faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+        }
       });
     });
 
