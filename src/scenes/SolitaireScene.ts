@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import RundotGameAPI from '@series-inc/rundot-game-sdk/api';
+import { HapticFeedbackStyle } from '@series-inc/rundot-game-sdk';
 
 interface Card {
   suit: string;
@@ -542,7 +543,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
         // Trigger haptic feedback for successful move to foundation
         try {
-          await RundotGameAPI.triggerHapticAsync('success');
+          await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
         } catch (error) {
           // Haptics may not be supported, fail silently
           console.warn('Haptic feedback not available:', error);
@@ -826,7 +827,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
           // Trigger haptic feedback for auto-complete move
           try {
-            await RundotGameAPI.triggerHapticAsync('success');
+            await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
           } catch (error) {
             // Haptics may not be supported, fail silently
             console.warn('Haptic feedback not available:', error);
