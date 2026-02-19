@@ -20,8 +20,8 @@ export default class SolitaireScene extends Phaser.Scene {
   private readonly CARD_WIDTH = 80;
   private readonly CARD_HEIGHT = 110;
   private readonly CARD_SPACING = 100;
-  private readonly STACK_OFFSET_Y = 35;
-  private readonly FACE_DOWN_OFFSET_Y = 8;
+  private readonly STACK_OFFSET_Y = 50;
+  private readonly FACE_DOWN_OFFSET_Y = 10;
 
   private readonly SUITS = ['♠', '♥', '♦', '♣'];
   private readonly SUIT_COLORS = ['black', 'red', 'red', 'black'] as const;
@@ -157,11 +157,12 @@ export default class SolitaireScene extends Phaser.Scene {
 
     const cardBg = this.add.graphics();
 
-    const text = this.add.text(0, 0, '', {
-      fontSize: '18px',
+    const text = this.add.text(0, -this.CARD_HEIGHT / 2 + 20, '', {
+      fontSize: '20px',
       color: color === 'red' ? '#ff0000' : '#000000',
       fontFamily: 'Arial',
-      align: 'center'
+      align: 'center',
+      fontStyle: 'bold'
     });
     text.setOrigin(0.5);
 
