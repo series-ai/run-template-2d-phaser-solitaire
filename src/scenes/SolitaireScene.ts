@@ -497,26 +497,45 @@ export default class SolitaireScene extends Phaser.Scene {
         if (cardIndex !== -1) {
           sourcePile.cards.splice(cardIndex, 1);
 
-          // Add to foundation
-          foundation.cards.push(card);
+          // Animate card to foundation
+          this.animateCardToFoundation(card, foundation, sourcePile);
 
-          // Flip top card in source pile if needed
-          if (sourcePile.cards.length > 0) {
-            const topCard = sourcePile.cards[sourcePile.cards.length - 1];
-            if (!topCard.faceUp) {
-              topCard.faceUp = true;
-            }
-          }
-
-          // Update visuals and check win
-          this.updateAllCards();
-          this.checkWin();
           return true;
         }
       }
     }
 
     return false;
+  }
+
+  private animateCardToFoundation(card: Card, foundation: Pile, sourcePile: Pile) {
+    // Increase depth so card appears above others during animation
+    card.container.setDepth(2000);
+
+    // Animate to foundation position
+    this.tweens.add({
+      targets: card.container,
+      x: foundation.x,
+      y: foundation.y,
+      duration: 200,
+      ease: 'Quad.easeInOut',
+      onComplete: () => {
+        // Add to foundation
+        foundation.cards.push(card);
+
+        // Flip top card in source pile if needed
+        if (sourcePile.cards.length > 0) {
+          const topCard = sourcePile.cards[sourcePile.cards.length - 1];
+          if (!topCard.faceUp) {
+            topCard.faceUp = true;
+          }
+        }
+
+        // Update visuals and check win
+        this.updateAllCards();
+        this.checkWin();
+      }
+    });
   }
 
   private onDragStart(card: Card) {
@@ -718,6 +737,9 @@ export default class SolitaireScene extends Phaser.Scene {
   private autoCompleteNextCard() {
     // Try to find any card that can be moved to a foundation
     let movedCard = false;
+    let cardToMove: Card | null = null;
+    let sourcePile: Pile | null = null;
+    let targetFoundation: Pile | null = null;
 
     // Check all tableau piles
     for (const pile of this.tableau) {
@@ -727,10 +749,9 @@ export default class SolitaireScene extends Phaser.Scene {
         // Try to move to any foundation
         for (const foundation of this.foundations) {
           if (this.canPlaceOnFoundation(topCard, foundation)) {
-            // Move the card
-            pile.cards.pop();
-            foundation.cards.push(topCard);
-            this.updateAllCards();
+            cardToMove = topCard;
+            sourcePile = pile;
+            targetFoundation = foundation;
             movedCard = true;
             break;
           }
@@ -746,19 +767,36 @@ export default class SolitaireScene extends Phaser.Scene {
 
       for (const foundation of this.foundations) {
         if (this.canPlaceOnFoundation(topCard, foundation)) {
-          this.waste.cards.pop();
-          foundation.cards.push(topCard);
-          this.updateAllCards();
+          cardToMove = topCard;
+          sourcePile = this.waste;
+          targetFoundation = foundation;
           movedCard = true;
           break;
         }
       }
     }
 
-    if (movedCard) {
-      // Continue auto-completing after a short delay
-      this.time.delayedCall(150, () => {
-        this.autoCompleteNextCard();
+    if (movedCard && cardToMove && sourcePile && targetFoundation) {
+      // Remove card from source pile
+      sourcePile.cards.pop();
+
+      // Animate the card to foundation
+      cardToMove.container.setDepth(2000);
+
+      this.tweens.add({
+        targets: cardToMove.container,
+        x: targetFoundation.x,
+        y: targetFoundation.y,
+        duration: 150,
+        ease: 'Quad.easeInOut',
+        onComplete: () => {
+          // Add to foundation
+          targetFoundation!.cards.push(cardToMove!);
+          this.updateAllCards();
+
+          // Continue auto-completing
+          this.autoCompleteNextCard();
+        }
       });
     } else {
       // No more moves possible or game is won
