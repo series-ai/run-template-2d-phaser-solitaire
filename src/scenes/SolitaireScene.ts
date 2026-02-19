@@ -247,7 +247,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
   private updateAllCards() {
     // Update tableau
-    this.tableau.forEach((pile, colIndex) => {
+    this.tableau.forEach((pile) => {
       pile.cards.forEach((card, rowIndex) => {
         const y = pile.y + (card.faceUp ? rowIndex * this.STACK_OFFSET_Y : rowIndex * this.FACE_DOWN_OFFSET_Y);
         card.container.setPosition(pile.x, y);
