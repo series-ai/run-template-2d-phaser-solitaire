@@ -46,6 +46,9 @@ export default class SolitaireScene extends Phaser.Scene {
   private lastClickedCard: Card | null = null;
   private readonly DOUBLE_CLICK_TIME = 300; // milliseconds
 
+  // Auto-complete tracking
+  private isAutoCompleting = false;
+
   constructor() {
     super({ key: 'SolitaireScene' });
   }
@@ -325,6 +328,9 @@ export default class SolitaireScene extends Phaser.Scene {
 
     // Update stock pile visual
     this.drawStockPile();
+
+    // Check if we should trigger auto-complete
+    this.checkAutoComplete();
   }
 
   private drawStockPile() {
@@ -673,6 +679,77 @@ export default class SolitaireScene extends Phaser.Scene {
         stroke: '#000000',
         strokeThickness: 6
       }).setOrigin(0.5);
+    }
+  }
+
+  private checkAutoComplete() {
+    // Don't check if already auto-completing or if game is won
+    if (this.isAutoCompleting) return;
+    if (this.foundations.every(pile => pile.cards.length === 13)) return;
+
+    // Check if all cards are face-up (no face-down cards anywhere, and stock/waste are empty)
+    const allTableauFaceUp = this.tableau.every(pile =>
+      pile.cards.every(card => card.faceUp)
+    );
+    const stockEmpty = this.stock.length === 0;
+    const wasteEmpty = this.waste.cards.length === 0;
+
+    if (allTableauFaceUp && stockEmpty && wasteEmpty) {
+      // Start auto-completing
+      this.isAutoCompleting = true;
+      this.autoCompleteNextCard();
+    }
+  }
+
+  private autoCompleteNextCard() {
+    // Try to find any card that can be moved to a foundation
+    let movedCard = false;
+
+    // Check all tableau piles
+    for (const pile of this.tableau) {
+      if (pile.cards.length > 0) {
+        const topCard = pile.cards[pile.cards.length - 1];
+
+        // Try to move to any foundation
+        for (const foundation of this.foundations) {
+          if (this.canPlaceOnFoundation(topCard, foundation)) {
+            // Move the card
+            pile.cards.pop();
+            foundation.cards.push(topCard);
+            this.updateAllCards();
+            movedCard = true;
+            break;
+          }
+        }
+
+        if (movedCard) break;
+      }
+    }
+
+    // Check waste pile (shouldn't have cards but just in case)
+    if (!movedCard && this.waste.cards.length > 0) {
+      const topCard = this.waste.cards[this.waste.cards.length - 1];
+
+      for (const foundation of this.foundations) {
+        if (this.canPlaceOnFoundation(topCard, foundation)) {
+          this.waste.cards.pop();
+          foundation.cards.push(topCard);
+          this.updateAllCards();
+          movedCard = true;
+          break;
+        }
+      }
+    }
+
+    if (movedCard) {
+      // Continue auto-completing after a short delay
+      this.time.delayedCall(150, () => {
+        this.autoCompleteNextCard();
+      });
+    } else {
+      // No more moves possible or game is won
+      this.isAutoCompleting = false;
+      this.checkWin();
     }
   }
 
