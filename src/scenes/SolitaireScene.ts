@@ -45,6 +45,7 @@ export default class SolitaireScene extends Phaser.Scene {
   private lastClickTime = 0;
   private lastClickedCard: Card | null = null;
   private readonly DOUBLE_CLICK_TIME = 300; // milliseconds
+  private justMovedToFoundation = false;
 
   // Auto-complete tracking
   private isAutoCompleting = false;
@@ -430,7 +431,15 @@ export default class SolitaireScene extends Phaser.Scene {
       currentTime - this.lastClickTime < this.DOUBLE_CLICK_TIME
     ) {
       // Double-click detected - try to move to foundation
-      this.tryMoveToFoundation(card);
+      const moved = this.tryMoveToFoundation(card);
+
+      if (moved) {
+        // Prevent drag from starting after this move
+        this.justMovedToFoundation = true;
+        this.time.delayedCall(100, () => {
+          this.justMovedToFoundation = false;
+        });
+      }
 
       // Reset tracking
       this.lastClickedCard = null;
@@ -442,9 +451,9 @@ export default class SolitaireScene extends Phaser.Scene {
     }
   }
 
-  private tryMoveToFoundation(card: Card) {
+  private tryMoveToFoundation(card: Card): boolean {
     // Only try if card is face-up
-    if (!card.faceUp) return;
+    if (!card.faceUp) return false;
 
     // Find which pile this card is in and if it's the top card
     let sourcePile: Pile | null = null;
@@ -478,7 +487,7 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     // Only move top cards
-    if (!sourcePile || !isTopCard) return;
+    if (!sourcePile || !isTopCard) return false;
 
     // Find a valid foundation
     for (const foundation of this.foundations) {
@@ -502,13 +511,18 @@ export default class SolitaireScene extends Phaser.Scene {
           // Update visuals and check win
           this.updateAllCards();
           this.checkWin();
-          return;
+          return true;
         }
       }
     }
+
+    return false;
   }
 
   private onDragStart(card: Card) {
+    // Don't allow drag if we just moved this card to foundation
+    if (this.justMovedToFoundation) return;
+
     // Find which pile this card is in
     let sourcePile: Pile | null = null;
     let cardIndex = -1;
