@@ -37,6 +37,11 @@ export default class SolitaireScene extends Phaser.Scene {
   private dragStartPile: Pile | null = null;
   private dragStartIndex = 0;
 
+  private stockGraphics!: Phaser.GameObjects.Graphics;
+  private stockCountText!: Phaser.GameObjects.Text;
+  private stockX = 0;
+  private stockY = 0;
+
   constructor() {
     super({ key: 'SolitaireScene' });
   }
@@ -68,20 +73,14 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     // Stock pile (top left)
+    this.stockX = startX;
+    this.stockY = startY;
     this.waste.x = startX + this.CARD_SPACING;
     this.waste.y = startY;
 
-    // Draw stock pile outline
-    const stockOutline = this.add.graphics();
-    stockOutline.lineStyle(2, 0x00ff00, 1);
-    stockOutline.strokeRoundedRect(
-      startX - this.CARD_WIDTH / 2,
-      startY - this.CARD_HEIGHT / 2,
-      this.CARD_WIDTH,
-      this.CARD_HEIGHT,
-      5
-    );
-    stockOutline.setInteractive(
+    // Create stock pile graphics
+    this.stockGraphics = this.add.graphics();
+    this.stockGraphics.setInteractive(
       new Phaser.Geom.Rectangle(
         startX - this.CARD_WIDTH / 2,
         startY - this.CARD_HEIGHT / 2,
@@ -90,7 +89,17 @@ export default class SolitaireScene extends Phaser.Scene {
       ),
       Phaser.Geom.Rectangle.Contains
     );
-    stockOutline.on('pointerdown', () => this.drawFromStock());
+    this.stockGraphics.on('pointerdown', () => this.drawFromStock());
+
+    // Create stock count text
+    this.stockCountText = this.add.text(0, 0, '', {
+      fontSize: '16px',
+      color: '#ffffff',
+      fontFamily: 'Arial, sans-serif',
+      fontStyle: 'bold'
+    });
+    this.stockCountText.setOrigin(0.5);
+    this.stockCountText.setDepth(100);
 
     // Tableau piles (bottom)
     for (let i = 0; i < 7; i++) {
@@ -306,6 +315,99 @@ export default class SolitaireScene extends Phaser.Scene {
         this.drawCard(card);
       });
     });
+
+    // Update stock pile visual
+    this.drawStockPile();
+  }
+
+  private drawStockPile() {
+    this.stockGraphics.clear();
+
+    if (this.stock.length > 0) {
+      // Draw card back to show there are cards
+      this.stockGraphics.fillStyle(0x1a2332, 1);
+      this.stockGraphics.fillRoundedRect(
+        this.stockX - this.CARD_WIDTH / 2,
+        this.stockY - this.CARD_HEIGHT / 2,
+        this.CARD_WIDTH,
+        this.CARD_HEIGHT,
+        8
+      );
+
+      // Border
+      this.stockGraphics.lineStyle(3, 0x4a5568, 1);
+      this.stockGraphics.strokeRoundedRect(
+        this.stockX - this.CARD_WIDTH / 2,
+        this.stockY - this.CARD_HEIGHT / 2,
+        this.CARD_WIDTH,
+        this.CARD_HEIGHT,
+        8
+      );
+
+      // Inner pattern
+      this.stockGraphics.lineStyle(2, 0x2d3748, 0.5);
+      this.stockGraphics.strokeRoundedRect(
+        this.stockX - this.CARD_WIDTH / 2 + 10,
+        this.stockY - this.CARD_HEIGHT / 2 + 10,
+        this.CARD_WIDTH - 20,
+        this.CARD_HEIGHT - 20,
+        5
+      );
+
+      // Add card count badge
+      const count = this.stock.length;
+      const badgeSize = 28;
+      const badgeX = this.stockX + this.CARD_WIDTH / 2 - badgeSize / 2 - 5;
+      const badgeY = this.stockY - this.CARD_HEIGHT / 2 + 5;
+
+      this.stockGraphics.fillStyle(0xff6b6b, 1);
+      this.stockGraphics.fillCircle(badgeX, badgeY, badgeSize / 2);
+      this.stockGraphics.lineStyle(2, 0xffffff, 1);
+      this.stockGraphics.strokeCircle(badgeX, badgeY, badgeSize / 2);
+
+      // Update text showing count
+      this.stockCountText.setText(count.toString());
+      this.stockCountText.setPosition(badgeX, badgeY);
+      this.stockCountText.setVisible(true);
+    } else if (this.waste.cards.length > 0) {
+      // Draw recycle icon when stock is empty but waste has cards
+      this.stockGraphics.lineStyle(3, 0x4ade80, 1);
+      this.stockGraphics.strokeRoundedRect(
+        this.stockX - this.CARD_WIDTH / 2,
+        this.stockY - this.CARD_HEIGHT / 2,
+        this.CARD_WIDTH,
+        this.CARD_HEIGHT,
+        8
+      );
+
+      // Draw circular arrow (recycle symbol)
+      this.stockGraphics.lineStyle(4, 0x4ade80, 1);
+      this.stockGraphics.beginPath();
+      this.stockGraphics.arc(this.stockX, this.stockY, 20, Phaser.Math.DegToRad(45), Phaser.Math.DegToRad(315), false);
+      this.stockGraphics.strokePath();
+
+      // Arrow head
+      this.stockGraphics.fillStyle(0x4ade80, 1);
+      this.stockGraphics.fillTriangle(
+        this.stockX + 18, this.stockY - 8,
+        this.stockX + 25, this.stockY - 2,
+        this.stockX + 18, this.stockY + 2
+      );
+
+      this.stockCountText.setVisible(false);
+    } else {
+      // Empty stock - draw subtle outline
+      this.stockGraphics.lineStyle(2, 0x666666, 0.5);
+      this.stockGraphics.strokeRoundedRect(
+        this.stockX - this.CARD_WIDTH / 2,
+        this.stockY - this.CARD_HEIGHT / 2,
+        this.CARD_WIDTH,
+        this.CARD_HEIGHT,
+        8
+      );
+
+      this.stockCountText.setVisible(false);
+    }
   }
 
   private drawFromStock() {
