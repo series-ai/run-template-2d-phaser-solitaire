@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import HelloWorldScene from './scenes/HelloWorldScene';
+import SolitaireScene from './scenes/SolitaireScene';
 import './style.css';
 import RundotGameAPI from "@series-inc/rundot-game-sdk/api";
 
@@ -11,15 +11,8 @@ async function bootstrap(): Promise<void> {
       width: 720,
       height: 1560,
       parent: "app",
-      backgroundColor: "#2c3e50",
-      scene: HelloWorldScene,
-      physics: {
-        default: "arcade",
-        arcade: {
-          gravity: { x: 0, y: 0 },
-          debug: false,
-        },
-      },
+      backgroundColor: "#006400",
+      scene: SolitaireScene,
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -27,7 +20,7 @@ async function bootstrap(): Promise<void> {
     };
 
     new Phaser.Game(config);
-    RundotGameAPI.log("[Main] Phaser game created");
+    RundotGameAPI.log("[Main] Solitaire game created");
   } catch (error) {
     console.error("[Main] Bootstrap error:", error);
   }
