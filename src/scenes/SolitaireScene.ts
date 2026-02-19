@@ -274,10 +274,16 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private updateAllCards() {
+    // First, hide all stock cards (they shouldn't be visible)
+    this.stock.forEach(card => {
+      card.container.setVisible(false);
+    });
+
     // Update tableau
     this.tableau.forEach((pile) => {
       let currentY = pile.y;
       pile.cards.forEach((card, rowIndex) => {
+        card.container.setVisible(true);
         card.container.setPosition(pile.x, currentY);
         card.container.setDepth(rowIndex);
         this.drawCard(card);
@@ -291,6 +297,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
     // Update waste pile
     this.waste.cards.forEach((card, index) => {
+      card.container.setVisible(true);
       card.container.setPosition(this.waste.x, this.waste.y);
       card.container.setDepth(index);
       this.drawCard(card);
@@ -299,6 +306,7 @@ export default class SolitaireScene extends Phaser.Scene {
     // Update foundations
     this.foundations.forEach(pile => {
       pile.cards.forEach((card, index) => {
+        card.container.setVisible(true);
         card.container.setPosition(pile.x, pile.y);
         card.container.setDepth(index);
         this.drawCard(card);
