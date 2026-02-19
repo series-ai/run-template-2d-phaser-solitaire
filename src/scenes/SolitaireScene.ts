@@ -38,7 +38,6 @@ export default class SolitaireScene extends Phaser.Scene {
   private dragStartIndex = 0;
 
   private stockGraphics!: Phaser.GameObjects.Graphics;
-  private stockCountText!: Phaser.GameObjects.Text;
   private stockX = 0;
   private stockY = 0;
 
@@ -90,16 +89,6 @@ export default class SolitaireScene extends Phaser.Scene {
       Phaser.Geom.Rectangle.Contains
     );
     this.stockGraphics.on('pointerdown', () => this.drawFromStock());
-
-    // Create stock count text
-    this.stockCountText = this.add.text(0, 0, '', {
-      fontSize: '16px',
-      color: '#ffffff',
-      fontFamily: 'Arial, sans-serif',
-      fontStyle: 'bold'
-    });
-    this.stockCountText.setOrigin(0.5);
-    this.stockCountText.setDepth(100);
 
     // Tableau piles (bottom)
     for (let i = 0; i < 7; i++) {
@@ -353,22 +342,6 @@ export default class SolitaireScene extends Phaser.Scene {
         this.CARD_HEIGHT - 20,
         5
       );
-
-      // Add card count badge
-      const count = this.stock.length;
-      const badgeSize = 28;
-      const badgeX = this.stockX + this.CARD_WIDTH / 2 - badgeSize / 2 - 5;
-      const badgeY = this.stockY - this.CARD_HEIGHT / 2 + 5;
-
-      this.stockGraphics.fillStyle(0xff6b6b, 1);
-      this.stockGraphics.fillCircle(badgeX, badgeY, badgeSize / 2);
-      this.stockGraphics.lineStyle(2, 0xffffff, 1);
-      this.stockGraphics.strokeCircle(badgeX, badgeY, badgeSize / 2);
-
-      // Update text showing count
-      this.stockCountText.setText(count.toString());
-      this.stockCountText.setPosition(badgeX, badgeY);
-      this.stockCountText.setVisible(true);
     } else if (this.waste.cards.length > 0) {
       // Draw recycle icon when stock is empty but waste has cards
       this.stockGraphics.lineStyle(3, 0x4ade80, 1);
@@ -393,8 +366,6 @@ export default class SolitaireScene extends Phaser.Scene {
         this.stockX + 25, this.stockY - 2,
         this.stockX + 18, this.stockY + 2
       );
-
-      this.stockCountText.setVisible(false);
     } else {
       // Empty stock - draw subtle outline
       this.stockGraphics.lineStyle(2, 0x666666, 0.5);
@@ -405,8 +376,6 @@ export default class SolitaireScene extends Phaser.Scene {
         this.CARD_HEIGHT,
         8
       );
-
-      this.stockCountText.setVisible(false);
     }
   }
 
