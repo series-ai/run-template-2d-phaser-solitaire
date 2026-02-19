@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import RundotGameAPI, { HapticFeedbackStyle } from '@series-inc/rundot-game-sdk/api';
 
 interface Card {
   suit: string;
@@ -532,12 +533,20 @@ export default class SolitaireScene extends Phaser.Scene {
       y: foundation.y,
       duration: 200,
       ease: 'Quad.easeInOut',
-      onComplete: () => {
+      onComplete: async () => {
         // Remove from source pile
         sourcePile.cards.splice(cardIndex, 1);
 
         // Add to foundation
         foundation.cards.push(card);
+
+        // Trigger haptic feedback for successful move to foundation
+        try {
+          await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
+        } catch (error) {
+          // Haptics may not be supported, fail silently
+          console.warn('Haptic feedback not available:', error);
+        }
 
         // Re-enable interaction
         card.container.setInteractive({ draggable: true });
@@ -808,12 +817,20 @@ export default class SolitaireScene extends Phaser.Scene {
         y: targetFoundation.y,
         duration: 150,
         ease: 'Quad.easeInOut',
-        onComplete: () => {
+        onComplete: async () => {
           // Remove card from source pile
           sourcePile!.cards.pop();
 
           // Add to foundation
           targetFoundation!.cards.push(cardToMove!);
+
+          // Trigger haptic feedback for auto-complete move
+          try {
+            await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
+          } catch (error) {
+            // Haptics may not be supported, fail silently
+            console.warn('Haptic feedback not available:', error);
+          }
 
           // Re-enable interaction
           cardToMove!.container.setInteractive({ draggable: true });
