@@ -386,9 +386,10 @@ export default class SolitaireScene extends Phaser.Scene {
       this.waste.cards.push(card);
       this.updateAllCards();
     } else if (this.waste.cards.length > 0) {
-      // Recycle waste back to stock
-      this.stock = this.waste.cards.reverse();
+      // Recycle waste back to stock (reversed order)
+      const wasteCards = [...this.waste.cards];
       this.waste.cards = [];
+      this.stock = wasteCards.reverse();
       this.stock.forEach(card => {
         card.faceUp = false;
       });
