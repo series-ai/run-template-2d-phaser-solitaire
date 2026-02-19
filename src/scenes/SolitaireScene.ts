@@ -6,7 +6,8 @@ interface Card {
   color: 'red' | 'black';
   faceUp: boolean;
   sprite: Phaser.GameObjects.Graphics & { card?: Card };
-  text: Phaser.GameObjects.Text;
+  rankText: Phaser.GameObjects.Text;
+  centerSuit: Phaser.GameObjects.Text;
   container: Phaser.GameObjects.Container;
 }
 
@@ -17,11 +18,11 @@ interface Pile {
 }
 
 export default class SolitaireScene extends Phaser.Scene {
-  private readonly CARD_WIDTH = 80;
-  private readonly CARD_HEIGHT = 110;
+  private readonly CARD_WIDTH = 90;
+  private readonly CARD_HEIGHT = 120;
   private readonly CARD_SPACING = 100;
-  private readonly STACK_OFFSET_Y = 50;
-  private readonly FACE_DOWN_OFFSET_Y = 10;
+  private readonly STACK_OFFSET_Y = 40;
+  private readonly FACE_DOWN_OFFSET_Y = 40;
 
   private readonly SUITS = ['♠', '♥', '♦', '♣'];
   private readonly SUIT_COLORS = ['black', 'red', 'red', 'black'] as const;
@@ -157,16 +158,26 @@ export default class SolitaireScene extends Phaser.Scene {
 
     const cardBg = this.add.graphics();
 
-    const text = this.add.text(0, -this.CARD_HEIGHT / 2 + 20, '', {
-      fontSize: '20px',
+    // Create rank text (top-left corner)
+    const rankText = this.add.text(-this.CARD_WIDTH / 2 + 10, -this.CARD_HEIGHT / 2 + 8, '', {
+      fontSize: '24px',
       color: color === 'red' ? '#ff0000' : '#000000',
-      fontFamily: 'Arial',
-      align: 'center',
+      fontFamily: 'Arial, sans-serif',
+      align: 'left',
       fontStyle: 'bold'
     });
-    text.setOrigin(0.5);
+    rankText.setOrigin(0, 0);
 
-    container.add([cardBg, text]);
+    // Create large center suit
+    const centerSuit = this.add.text(0, 0, '', {
+      fontSize: '48px',
+      color: color === 'red' ? '#ff0000' : '#000000',
+      fontFamily: 'Arial, sans-serif',
+      align: 'center'
+    });
+    centerSuit.setOrigin(0.5);
+
+    container.add([cardBg, rankText, centerSuit]);
     container.setSize(this.CARD_WIDTH, this.CARD_HEIGHT);
     container.setInteractive({ draggable: true });
 
@@ -176,7 +187,8 @@ export default class SolitaireScene extends Phaser.Scene {
       color,
       faceUp: false,
       sprite: cardBg as Card['sprite'],
-      text,
+      rankText,
+      centerSuit,
       container
     };
 
@@ -202,47 +214,64 @@ export default class SolitaireScene extends Phaser.Scene {
     card.sprite.clear();
 
     if (card.faceUp) {
-      // White card with border
+      // White card with subtle shadow
       card.sprite.fillStyle(0xffffff, 1);
       card.sprite.fillRoundedRect(
         -this.CARD_WIDTH / 2,
         -this.CARD_HEIGHT / 2,
         this.CARD_WIDTH,
         this.CARD_HEIGHT,
-        5
+        8
       );
-      card.sprite.lineStyle(2, 0x000000, 1);
+      card.sprite.lineStyle(3, 0x333333, 1);
       card.sprite.strokeRoundedRect(
         -this.CARD_WIDTH / 2,
         -this.CARD_HEIGHT / 2,
         this.CARD_WIDTH,
         this.CARD_HEIGHT,
-        5
+        8
       );
 
-      // Show rank and suit
-      card.text.setText(`${this.RANKS[card.rank - 1]}\n${card.suit}`);
-      card.text.setVisible(true);
+      // Show rank in top-left
+      card.rankText.setText(this.RANKS[card.rank - 1]);
+      card.rankText.setVisible(true);
+
+      // Show large suit in center
+      card.centerSuit.setText(card.suit);
+      card.centerSuit.setVisible(true);
     } else {
-      // Blue card back
-      card.sprite.fillStyle(0x2c3e50, 1);
+      // Navy blue card back with pattern
+      card.sprite.fillStyle(0x1a2332, 1);
       card.sprite.fillRoundedRect(
         -this.CARD_WIDTH / 2,
         -this.CARD_HEIGHT / 2,
         this.CARD_WIDTH,
         this.CARD_HEIGHT,
-        5
+        8
       );
-      card.sprite.lineStyle(2, 0x000000, 1);
+
+      // Border
+      card.sprite.lineStyle(3, 0x4a5568, 1);
       card.sprite.strokeRoundedRect(
         -this.CARD_WIDTH / 2,
         -this.CARD_HEIGHT / 2,
         this.CARD_WIDTH,
         this.CARD_HEIGHT,
+        8
+      );
+
+      // Inner pattern
+      card.sprite.lineStyle(2, 0x2d3748, 0.5);
+      card.sprite.strokeRoundedRect(
+        -this.CARD_WIDTH / 2 + 10,
+        -this.CARD_HEIGHT / 2 + 10,
+        this.CARD_WIDTH - 20,
+        this.CARD_HEIGHT - 20,
         5
       );
 
-      card.text.setVisible(false);
+      card.rankText.setVisible(false);
+      card.centerSuit.setVisible(false);
     }
   }
 
