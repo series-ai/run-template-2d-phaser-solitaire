@@ -41,6 +41,11 @@ export default class SolitaireScene extends Phaser.Scene {
   private stockX = 0;
   private stockY = 0;
 
+  // Double-click tracking
+  private lastClickTime = 0;
+  private lastClickedCard: Card | null = null;
+  private readonly DOUBLE_CLICK_TIME = 300; // milliseconds
+
   constructor() {
     super({ key: 'SolitaireScene' });
   }
@@ -191,6 +196,11 @@ export default class SolitaireScene extends Phaser.Scene {
     };
 
     card.sprite.card = card;
+
+    // Set up pointer events
+    container.on('pointerdown', () => {
+      this.onCardClick(card);
+    });
 
     // Set up drag events
     container.on('dragstart', (_pointer: Phaser.Input.Pointer, _dragX: number, _dragY: number) => {
@@ -402,6 +412,93 @@ export default class SolitaireScene extends Phaser.Scene {
         card.faceUp = false;
       });
       this.updateAllCards();
+    }
+  }
+
+  private onCardClick(card: Card) {
+    const currentTime = this.time.now;
+
+    // Check if this is a double-click
+    if (
+      this.lastClickedCard === card &&
+      currentTime - this.lastClickTime < this.DOUBLE_CLICK_TIME
+    ) {
+      // Double-click detected - try to move to foundation
+      this.tryMoveToFoundation(card);
+
+      // Reset tracking
+      this.lastClickedCard = null;
+      this.lastClickTime = 0;
+    } else {
+      // First click - track it
+      this.lastClickedCard = card;
+      this.lastClickTime = currentTime;
+    }
+  }
+
+  private tryMoveToFoundation(card: Card) {
+    // Only try if card is face-up
+    if (!card.faceUp) return;
+
+    // Find which pile this card is in and if it's the top card
+    let sourcePile: Pile | null = null;
+    let isTopCard = false;
+
+    // Check tableau
+    for (const pile of this.tableau) {
+      const index = pile.cards.indexOf(card);
+      if (index !== -1 && index === pile.cards.length - 1) {
+        sourcePile = pile;
+        isTopCard = true;
+        break;
+      }
+    }
+
+    // Check waste
+    if (!sourcePile && this.waste.cards.length > 0 && this.waste.cards[this.waste.cards.length - 1] === card) {
+      sourcePile = this.waste;
+      isTopCard = true;
+    }
+
+    // Check foundations (can move from one foundation to another if needed, though rare)
+    if (!sourcePile) {
+      for (const pile of this.foundations) {
+        if (pile.cards.length > 0 && pile.cards[pile.cards.length - 1] === card) {
+          sourcePile = pile;
+          isTopCard = true;
+          break;
+        }
+      }
+    }
+
+    // Only move top cards
+    if (!sourcePile || !isTopCard) return;
+
+    // Find a valid foundation
+    for (const foundation of this.foundations) {
+      if (this.canPlaceOnFoundation(card, foundation)) {
+        // Remove from source
+        const cardIndex = sourcePile.cards.indexOf(card);
+        if (cardIndex !== -1) {
+          sourcePile.cards.splice(cardIndex, 1);
+
+          // Add to foundation
+          foundation.cards.push(card);
+
+          // Flip top card in source pile if needed
+          if (sourcePile.cards.length > 0) {
+            const topCard = sourcePile.cards[sourcePile.cards.length - 1];
+            if (!topCard.faceUp) {
+              topCard.faceUp = true;
+            }
+          }
+
+          // Update visuals and check win
+          this.updateAllCards();
+          this.checkWin();
+          return;
+        }
+      }
     }
   }
 
