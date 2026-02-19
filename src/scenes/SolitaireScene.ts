@@ -20,8 +20,8 @@ export default class SolitaireScene extends Phaser.Scene {
   private readonly CARD_WIDTH = 80;
   private readonly CARD_HEIGHT = 110;
   private readonly CARD_SPACING = 100;
-  private readonly STACK_OFFSET_Y = 25;
-  private readonly FACE_DOWN_OFFSET_Y = 5;
+  private readonly STACK_OFFSET_Y = 35;
+  private readonly FACE_DOWN_OFFSET_Y = 8;
 
   private readonly SUITS = ['♠', '♥', '♦', '♣'];
   private readonly SUIT_COLORS = ['black', 'red', 'red', 'black'] as const;
