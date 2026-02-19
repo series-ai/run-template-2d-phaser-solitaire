@@ -492,13 +492,10 @@ export default class SolitaireScene extends Phaser.Scene {
     // Find a valid foundation
     for (const foundation of this.foundations) {
       if (this.canPlaceOnFoundation(card, foundation)) {
-        // Remove from source
         const cardIndex = sourcePile.cards.indexOf(card);
         if (cardIndex !== -1) {
-          sourcePile.cards.splice(cardIndex, 1);
-
-          // Animate card to foundation
-          this.animateCardToFoundation(card, foundation, sourcePile);
+          // Animate card to foundation (will handle removing from source)
+          this.animateCardToFoundation(card, foundation, sourcePile, cardIndex);
 
           return true;
         }
@@ -508,7 +505,10 @@ export default class SolitaireScene extends Phaser.Scene {
     return false;
   }
 
-  private animateCardToFoundation(card: Card, foundation: Pile, sourcePile: Pile) {
+  private animateCardToFoundation(card: Card, foundation: Pile, sourcePile: Pile, cardIndex: number) {
+    // Disable interaction on the card during animation
+    card.container.disableInteractive();
+
     // Increase depth so card appears above others during animation
     card.container.setDepth(2000);
 
@@ -520,8 +520,14 @@ export default class SolitaireScene extends Phaser.Scene {
       duration: 200,
       ease: 'Quad.easeInOut',
       onComplete: () => {
+        // Remove from source pile
+        sourcePile.cards.splice(cardIndex, 1);
+
         // Add to foundation
         foundation.cards.push(card);
+
+        // Re-enable interaction
+        card.container.setInteractive({ draggable: true });
 
         // Flip top card in source pile if needed
         if (sourcePile.cards.length > 0) {
@@ -777,8 +783,8 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     if (movedCard && cardToMove && sourcePile && targetFoundation) {
-      // Remove card from source pile
-      sourcePile.cards.pop();
+      // Disable interaction during animation
+      cardToMove.container.disableInteractive();
 
       // Animate the card to foundation
       cardToMove.container.setDepth(2000);
@@ -790,8 +796,15 @@ export default class SolitaireScene extends Phaser.Scene {
         duration: 150,
         ease: 'Quad.easeInOut',
         onComplete: () => {
+          // Remove card from source pile
+          sourcePile!.cards.pop();
+
           // Add to foundation
           targetFoundation!.cards.push(cardToMove!);
+
+          // Re-enable interaction
+          cardToMove!.container.setInteractive({ draggable: true });
+
           this.updateAllCards();
 
           // Continue auto-completing
