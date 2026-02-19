@@ -55,6 +55,19 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset all game state
+    this.tableau = [];
+    this.foundations = [];
+    this.stock = [];
+    this.waste = { cards: [], x: 0, y: 0 };
+    this.draggedCards = [];
+    this.dragStartPile = null;
+    this.dragStartIndex = 0;
+    this.lastClickTime = 0;
+    this.lastClickedCard = null;
+    this.justMovedToFoundation = false;
+    this.isAutoCompleting = false;
+
     // Set up the game board
     this.setupBoard();
 
