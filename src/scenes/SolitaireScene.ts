@@ -748,7 +748,7 @@ export default class SolitaireScene extends Phaser.Scene {
     return card.color !== topCard.color && card.rank === topCard.rank - 1;
   }
 
-  private checkWin() {
+  private async checkWin() {
     const allInFoundations = this.foundations.every(pile => pile.cards.length === 13);
 
     if (allInFoundations) {
@@ -759,7 +759,31 @@ export default class SolitaireScene extends Phaser.Scene {
         stroke: '#000000',
         strokeThickness: 6
       }).setOrigin(0.5);
+
+      // Celebratory haptic sequence!
+      try {
+        // First big success haptic
+        await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
+
+        // Wait a bit then do a series of quick impacts for celebration
+        await this.delay(100);
+        await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
+
+        await this.delay(100);
+        await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
+
+        await this.delay(150);
+        // Final big success
+        await RundotGameAPI.triggerHapticAsync(HapticFeedbackStyle.Success);
+      } catch (error) {
+        // Haptics may not be supported, fail silently
+        console.warn('Haptic feedback not available:', error);
+      }
     }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => this.time.delayedCall(ms, resolve));
   }
 
   private checkAutoComplete() {
