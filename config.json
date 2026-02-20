@@ -8,27 +8,6 @@
     "antiCheat": {
       "enableRateLimit": true,
       "minTimeBetweenSubmissionsSec": 30
-    },
-    "seedEntries": {
-      "default": {
-        "alltime": [
-          {
-            "score": 300,
-            "username": "FastFingers",
-            "duration": 300
-          },
-          {
-            "score": 420,
-            "username": "CardMaster",
-            "duration": 420
-          },
-          {
-            "score": 540,
-            "username": "Patience",
-            "duration": 540
-          }
-        ]
-      }
     }
   }
 }
