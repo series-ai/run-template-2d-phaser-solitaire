@@ -1,0 +1,34 @@
+{
+  "leaderboard": {
+    "requiresToken": false,
+    "minScore": 1,
+    "maxScore": 3600,
+    "minDurationSec": 1,
+    "maxDurationSec": 3600,
+    "antiCheat": {
+      "enableRateLimit": true,
+      "minTimeBetweenSubmissionsSec": 30
+    },
+    "seedEntries": {
+      "default": {
+        "alltime": [
+          {
+            "score": 300,
+            "username": "FastFingers",
+            "duration": 300
+          },
+          {
+            "score": 420,
+            "username": "CardMaster",
+            "duration": 420
+          },
+          {
+            "score": 540,
+            "username": "Patience",
+            "duration": 540
+          }
+        ]
+      }
+    }
+  }
+}

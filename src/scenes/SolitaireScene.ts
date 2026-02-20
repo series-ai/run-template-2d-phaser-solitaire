@@ -801,6 +801,25 @@ export default class SolitaireScene extends Phaser.Scene {
         strokeThickness: 4
       }).setOrigin(0.5);
 
+      // Submit score to leaderboard (lower time is better)
+      try {
+        const result = await RundotGameAPI.leaderboard.submitScore({
+          score: elapsedSeconds, // Use seconds as score
+          duration: elapsedSeconds
+        });
+
+        // Display rank
+        this.add.text(360, 930, `Rank: #${result.rank}`, {
+          fontSize: '36px',
+          color: '#ffff00',
+          fontFamily: 'Arial',
+          stroke: '#000000',
+          strokeThickness: 3
+        }).setOrigin(0.5);
+      } catch (error) {
+        console.warn('Failed to submit leaderboard score:', error);
+      }
+
       // Celebratory haptic sequence!
       try {
         // First big success haptic
@@ -955,7 +974,8 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private addResetButton() {
-    const button = this.add.text(360, 1500, 'New Game', {
+    // New Game button
+    const newGameButton = this.add.text(260, 1500, 'New Game', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -963,8 +983,132 @@ export default class SolitaireScene extends Phaser.Scene {
       padding: { x: 20, y: 10 }
     }).setOrigin(0.5).setInteractive();
 
-    button.on('pointerdown', () => {
+    newGameButton.on('pointerdown', () => {
       this.scene.restart();
     });
+
+    // Leaderboard button
+    const leaderboardButton = this.add.text(460, 1500, 'Leaderboard', {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      backgroundColor: '#1e7d8e',
+      padding: { x: 20, y: 10 }
+    }).setOrigin(0.5).setInteractive();
+
+    leaderboardButton.on('pointerdown', () => {
+      this.showLeaderboard();
+    });
+  }
+
+  private async showLeaderboard() {
+    // Create dark overlay
+    const overlay = this.add.rectangle(360, 800, 720, 1600, 0x000000, 0.85);
+    overlay.setOrigin(0.5);
+    overlay.setDepth(3000);
+
+    // Title
+    const title = this.add.text(360, 100, 'Leaderboard', {
+      fontSize: '48px',
+      color: '#ffff00',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    title.setDepth(3001);
+
+    // Close button
+    const closeButton = this.add.text(650, 100, 'X', {
+      fontSize: '48px',
+      color: '#ff0000',
+      fontFamily: 'Arial',
+      backgroundColor: '#333333',
+      padding: { x: 15, y: 5 }
+    }).setOrigin(0.5).setInteractive();
+    closeButton.setDepth(3001);
+
+    closeButton.on('pointerdown', () => {
+      overlay.destroy();
+      title.destroy();
+      closeButton.destroy();
+      // Destroy all leaderboard entries
+      this.children.list.forEach(child => {
+        if (child.depth === 3001 && child !== title && child !== closeButton) {
+          child.destroy();
+        }
+      });
+    });
+
+    try {
+      // Get podium scores (top 10)
+      const podiumScores = await RundotGameAPI.leaderboard.getPodiumScores({
+        topCount: 10,
+        contextAhead: 0,
+        contextBehind: 0
+      });
+
+      let yOffset = 180;
+      const entries = [...podiumScores.topScores];
+
+      // Display entries
+      entries.forEach((entry, index) => {
+        const rank = index + 1;
+        const minutes = Math.floor(entry.score / 60);
+        const seconds = entry.score % 60;
+        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+        // Rank color based on position
+        let rankColor = '#ffffff';
+        if (rank === 1) rankColor = '#ffd700'; // Gold
+        else if (rank === 2) rankColor = '#c0c0c0'; // Silver
+        else if (rank === 3) rankColor = '#cd7f32'; // Bronze
+
+        const entryText = this.add.text(
+          360,
+          yOffset,
+          `#${rank}  ${entry.username}  ${timeString}`,
+          {
+            fontSize: '28px',
+            color: rankColor,
+            fontFamily: 'Arial',
+            stroke: '#000000',
+            strokeThickness: 2
+          }
+        ).setOrigin(0.5);
+        entryText.setDepth(3001);
+
+        yOffset += 50;
+      });
+
+      // Show player's rank if available
+      if (podiumScores.playerContext) {
+        const myRank = this.add.text(
+          360,
+          yOffset + 50,
+          `Your Rank: #${podiumScores.playerContext.rank}`,
+          {
+            fontSize: '32px',
+            color: '#00ff00',
+            fontFamily: 'Arial',
+            stroke: '#000000',
+            strokeThickness: 3
+          }
+        ).setOrigin(0.5);
+        myRank.setDepth(3001);
+      }
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      const errorText = this.add.text(
+        360,
+        400,
+        'Failed to load leaderboard',
+        {
+          fontSize: '32px',
+          color: '#ff0000',
+          fontFamily: 'Arial'
+        }
+      ).setOrigin(0.5);
+      errorText.setDepth(3001);
+    }
   }
 }
