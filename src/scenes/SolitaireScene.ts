@@ -29,6 +29,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
   private readonly SUITS = ['♠', '♥', '♦', '♣'];
   private readonly SUIT_COLORS = ['black', 'red', 'red', 'black'] as const;
+  private readonly SUIT_HEX_COLORS = ['#000000', '#e61e2e', '#ff69b4', '#666666']; // Spade (dark black), Heart (vibrant red), Diamond (pink), Club (grey)
   private readonly RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
   private tableau: Pile[] = [];
@@ -147,7 +148,8 @@ export default class SolitaireScene extends Phaser.Scene {
         const card = this.createCard(
           this.SUITS[suitIndex],
           rank,
-          this.SUIT_COLORS[suitIndex]
+          this.SUIT_COLORS[suitIndex],
+          this.SUIT_HEX_COLORS[suitIndex]
         );
         deck.push(card);
       }
@@ -176,7 +178,7 @@ export default class SolitaireScene extends Phaser.Scene {
     this.updateAllCards();
   }
 
-  private createCard(suit: string, rank: number, color: 'red' | 'black'): Card {
+  private createCard(suit: string, rank: number, color: 'red' | 'black', hexColor: string): Card {
     const container = this.add.container(0, 0);
 
     const cardBg = this.add.graphics();
@@ -184,7 +186,7 @@ export default class SolitaireScene extends Phaser.Scene {
     // Create rank text (top-left corner)
     const rankText = this.add.text(-this.CARD_WIDTH / 2 + 10, -this.CARD_HEIGHT / 2 + 8, '', {
       fontSize: '24px',
-      color: color === 'red' ? '#ff0000' : '#000000',
+      color: hexColor,
       fontFamily: 'Arial, sans-serif',
       align: 'left',
       fontStyle: 'bold'
@@ -194,7 +196,7 @@ export default class SolitaireScene extends Phaser.Scene {
     // Create corner suit (top-left, next to rank)
     const cornerSuit = this.add.text(-this.CARD_WIDTH / 2 + 38, -this.CARD_HEIGHT / 2 + 10, '', {
       fontSize: '20px',
-      color: color === 'red' ? '#ff0000' : '#000000',
+      color: hexColor,
       fontFamily: 'Arial, sans-serif',
       align: 'left'
     });
@@ -203,7 +205,7 @@ export default class SolitaireScene extends Phaser.Scene {
     // Create large center suit
     const centerSuit = this.add.text(0, 0, '', {
       fontSize: '48px',
-      color: color === 'red' ? '#ff0000' : '#000000',
+      color: hexColor,
       fontFamily: 'Arial, sans-serif',
       align: 'center'
     });
