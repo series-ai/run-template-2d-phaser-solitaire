@@ -54,6 +54,10 @@ export default class SolitaireScene extends Phaser.Scene {
   // Auto-complete tracking
   private isAutoCompleting = false;
 
+  // Timer tracking
+  private gameStartTime: number | null = null;
+  private gameEndTime: number | null = null;
+
   constructor() {
     super({ key: 'SolitaireScene' });
   }
@@ -71,6 +75,8 @@ export default class SolitaireScene extends Phaser.Scene {
     this.lastClickedCard = null;
     this.justMovedToFoundation = false;
     this.isAutoCompleting = false;
+    this.gameStartTime = null;
+    this.gameEndTime = null;
 
     // Set up the game board
     this.setupBoard();
@@ -539,6 +545,11 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private animateCardToFoundation(card: Card, foundation: Pile, sourcePile: Pile, cardIndex: number) {
+    // Start timer on first move
+    if (this.gameStartTime === null) {
+      this.gameStartTime = this.time.now;
+    }
+
     // Disable interaction on the card during animation
     card.container.disableInteractive();
 
@@ -705,6 +716,11 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     if (validDrop && targetPile) {
+      // Start timer on first move
+      if (this.gameStartTime === null) {
+        this.gameStartTime = this.time.now;
+      }
+
       // Move cards
       this.dragStartPile.cards.splice(this.dragStartIndex, this.draggedCards.length);
       targetPile.cards.push(...this.draggedCards);
@@ -752,12 +768,32 @@ export default class SolitaireScene extends Phaser.Scene {
     const allInFoundations = this.foundations.every(pile => pile.cards.length === 13);
 
     if (allInFoundations) {
+      // Record end time
+      this.gameEndTime = this.time.now;
+
+      // Calculate elapsed time
+      const elapsedMs = this.gameStartTime !== null ? this.gameEndTime - this.gameStartTime : 0;
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+      // Display win message
       this.add.text(360, 780, 'You Win!', {
         fontSize: '64px',
         color: '#00ff00',
         fontFamily: 'Arial',
         stroke: '#000000',
         strokeThickness: 6
+      }).setOrigin(0.5);
+
+      // Display time
+      this.add.text(360, 860, `Time: ${timeString}`, {
+        fontSize: '48px',
+        color: '#ffffff',
+        fontFamily: 'Arial',
+        stroke: '#000000',
+        strokeThickness: 4
       }).setOrigin(0.5);
 
       // Celebratory haptic sequence!
