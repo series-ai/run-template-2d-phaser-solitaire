@@ -846,6 +846,10 @@ export default class SolitaireScene extends Phaser.Scene {
         // Haptics may not be supported, fail silently
         console.warn('Haptic feedback not available:', error);
       }
+
+      // Show leaderboard after haptic celebration
+      await this.delay(500);
+      this.showLeaderboard();
     }
   }
 
