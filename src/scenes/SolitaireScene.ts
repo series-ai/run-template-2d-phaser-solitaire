@@ -9,6 +9,7 @@ interface Card {
   faceUp: boolean;
   sprite: Phaser.GameObjects.Graphics & { card?: Card };
   rankText: Phaser.GameObjects.Text;
+  cornerSuit: Phaser.GameObjects.Text;
   centerSuit: Phaser.GameObjects.Text;
   container: Phaser.GameObjects.Container;
 }
@@ -190,6 +191,15 @@ export default class SolitaireScene extends Phaser.Scene {
     });
     rankText.setOrigin(0, 0);
 
+    // Create corner suit (top-left, below rank)
+    const cornerSuit = this.add.text(-this.CARD_WIDTH / 2 + 10, -this.CARD_HEIGHT / 2 + 32, '', {
+      fontSize: '20px',
+      color: color === 'red' ? '#ff0000' : '#000000',
+      fontFamily: 'Arial, sans-serif',
+      align: 'left'
+    });
+    cornerSuit.setOrigin(0, 0);
+
     // Create large center suit
     const centerSuit = this.add.text(0, 0, '', {
       fontSize: '48px',
@@ -199,7 +209,7 @@ export default class SolitaireScene extends Phaser.Scene {
     });
     centerSuit.setOrigin(0.5);
 
-    container.add([cardBg, rankText, centerSuit]);
+    container.add([cardBg, rankText, cornerSuit, centerSuit]);
     container.setSize(this.CARD_WIDTH, this.CARD_HEIGHT);
     container.setInteractive({ draggable: true });
 
@@ -210,6 +220,7 @@ export default class SolitaireScene extends Phaser.Scene {
       faceUp: false,
       sprite: cardBg as Card['sprite'],
       rankText,
+      cornerSuit,
       centerSuit,
       container
     };
@@ -263,6 +274,10 @@ export default class SolitaireScene extends Phaser.Scene {
       card.rankText.setText(this.RANKS[card.rank - 1]);
       card.rankText.setVisible(true);
 
+      // Show suit in top-left corner (below rank)
+      card.cornerSuit.setText(card.suit);
+      card.cornerSuit.setVisible(true);
+
       // Show large suit in center
       card.centerSuit.setText(card.suit);
       card.centerSuit.setVisible(true);
@@ -298,6 +313,7 @@ export default class SolitaireScene extends Phaser.Scene {
       );
 
       card.rankText.setVisible(false);
+      card.cornerSuit.setVisible(false);
       card.centerSuit.setVisible(false);
     }
   }
