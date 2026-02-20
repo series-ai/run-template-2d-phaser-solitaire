@@ -57,6 +57,7 @@ export default class SolitaireScene extends Phaser.Scene {
   // Timer tracking
   private gameStartTime: number | null = null;
   private gameEndTime: number | null = null;
+  private timerText: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super({ key: 'SolitaireScene' });
@@ -77,12 +78,16 @@ export default class SolitaireScene extends Phaser.Scene {
     this.isAutoCompleting = false;
     this.gameStartTime = null;
     this.gameEndTime = null;
+    this.timerText = null;
 
     // Set up the game board
     this.setupBoard();
 
     // Deal cards
     this.dealCards();
+
+    // Add timer display
+    this.addTimerDisplay();
 
     // Add reset button
     this.addResetButton();
@@ -820,6 +825,28 @@ export default class SolitaireScene extends Phaser.Scene {
 
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => this.time.delayedCall(ms, resolve));
+  }
+
+  private addTimerDisplay() {
+    // Create timer text in top right area
+    this.timerText = this.add.text(680, 20, '0:00', {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      stroke: '#000000',
+      strokeThickness: 3
+    }).setOrigin(1, 0); // Right-aligned
+  }
+
+  update() {
+    // Update timer display
+    if (this.timerText && this.gameStartTime !== null && this.gameEndTime === null) {
+      const elapsedMs = this.time.now - this.gameStartTime;
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      this.timerText.setText(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    }
   }
 
   private checkAutoComplete() {
