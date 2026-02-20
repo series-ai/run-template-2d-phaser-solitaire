@@ -449,6 +449,11 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private drawFromStock() {
+    // Start timer on first move
+    if (this.gameStartTime === null) {
+      this.gameStartTime = this.time.now;
+    }
+
     if (this.stock.length > 0) {
       const card = this.stock.pop()!;
       card.faceUp = true;
