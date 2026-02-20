@@ -456,9 +456,53 @@ export default class SolitaireScene extends Phaser.Scene {
 
     if (this.stock.length > 0) {
       const card = this.stock.pop()!;
-      card.faceUp = true;
-      this.waste.cards.push(card);
-      this.updateAllCards();
+
+      // Position card at stock pile initially
+      card.container.setVisible(true);
+      card.container.setPosition(this.stockX, this.stockY);
+      card.container.setDepth(1500);
+      card.faceUp = false;
+      this.drawCard(card);
+
+      // Disable stock interaction during animation
+      this.stockGraphics.disableInteractive();
+
+      // Animate card flipping and moving to waste pile
+      this.tweens.add({
+        targets: card.container,
+        x: this.waste.x,
+        y: this.waste.y,
+        duration: 300,
+        ease: 'Quad.easeOut',
+        onUpdate: (tween) => {
+          // Flip the card halfway through the animation
+          if (tween.progress > 0.3 && !card.faceUp) {
+            card.faceUp = true;
+            this.drawCard(card);
+          }
+        },
+        onComplete: () => {
+          // Add to waste pile
+          this.waste.cards.push(card);
+
+          // Re-enable stock interaction
+          this.stockGraphics.setInteractive(
+            new Phaser.Geom.Rectangle(
+              this.stockX - this.CARD_WIDTH / 2,
+              this.stockY - this.CARD_HEIGHT / 2,
+              this.CARD_WIDTH,
+              this.CARD_HEIGHT
+            ),
+            Phaser.Geom.Rectangle.Contains
+          );
+
+          // Update all cards to ensure proper positioning and depth
+          this.updateAllCards();
+        }
+      });
+
+      // Also update the stock pile visual immediately
+      this.drawStockPile();
     } else if (this.waste.cards.length > 0) {
       // Recycle waste back to stock (reversed order)
       const wasteCards = [...this.waste.cards];
