@@ -828,8 +828,8 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private addTimerDisplay() {
-    // Create timer text in top right area
-    this.timerText = this.add.text(680, 20, '0:00', {
+    // Create timer text in bottom right area
+    this.timerText = this.add.text(680, 1450, '0:00', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
