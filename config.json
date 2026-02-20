@@ -2,9 +2,9 @@
   "leaderboard": {
     "requiresToken": false,
     "minScore": 1,
-    "maxScore": 3600,
+    "maxScore": 86400,
     "minDurationSec": 1,
-    "maxDurationSec": 3600,
+    "maxDurationSec": 86400,
     "antiCheat": {
       "enableRateLimit": true,
       "minTimeBetweenSubmissionsSec": 30

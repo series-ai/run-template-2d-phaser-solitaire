@@ -802,9 +802,9 @@ export default class SolitaireScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       // Submit score to leaderboard (invert so lower time = higher score)
-      // Max possible time is 3600 seconds (1 hour), so we invert: 3600 - actualTime
+      // Max possible time is 86400 seconds (24 hours), so we invert: 86400 - actualTime
       try {
-        const invertedScore = 3600 - elapsedSeconds;
+        const invertedScore = 86400 - elapsedSeconds;
         const result = await RundotGameAPI.leaderboard.submitScore({
           score: invertedScore,
           duration: elapsedSeconds
@@ -1050,8 +1050,8 @@ export default class SolitaireScene extends Phaser.Scene {
       // Display entries
       entries.forEach((entry, index) => {
         const rank = index + 1;
-        // Convert inverted score back to actual time (3600 - score)
-        const actualTimeSeconds = 3600 - entry.score;
+        // Convert inverted score back to actual time (86400 - score)
+        const actualTimeSeconds = 86400 - entry.score;
         const minutes = Math.floor(actualTimeSeconds / 60);
         const seconds = actualTimeSeconds % 60;
         const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
