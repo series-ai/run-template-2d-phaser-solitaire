@@ -1027,16 +1027,11 @@ export default class SolitaireScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive();
     closeButton.setDepth(3001);
 
+    const leaderboardElements: Phaser.GameObjects.GameObject[] = [overlay, title, closeButton];
+
     closeButton.on('pointerdown', () => {
-      overlay.destroy();
-      title.destroy();
-      closeButton.destroy();
-      // Destroy all leaderboard entries
-      this.children.list.forEach(child => {
-        if (child.depth === 3001 && child !== title && child !== closeButton) {
-          child.destroy();
-        }
-      });
+      // Destroy all leaderboard elements
+      leaderboardElements.forEach(element => element.destroy());
     });
 
     try {
@@ -1048,7 +1043,7 @@ export default class SolitaireScene extends Phaser.Scene {
       });
 
       let yOffset = 180;
-      const entries = [...podiumScores.topScores];
+      const entries = podiumScores.context.topEntries;
 
       // Display entries
       entries.forEach((entry, index) => {
@@ -1076,16 +1071,17 @@ export default class SolitaireScene extends Phaser.Scene {
           }
         ).setOrigin(0.5);
         entryText.setDepth(3001);
+        leaderboardElements.push(entryText);
 
         yOffset += 50;
       });
 
       // Show player's rank if available
-      if (podiumScores.playerContext) {
+      if (podiumScores.context.playerEntry) {
         const myRank = this.add.text(
           360,
           yOffset + 50,
-          `Your Rank: #${podiumScores.playerContext.rank}`,
+          `Your Rank: #${podiumScores.playerRank}`,
           {
             fontSize: '32px',
             color: '#00ff00',
@@ -1095,6 +1091,7 @@ export default class SolitaireScene extends Phaser.Scene {
           }
         ).setOrigin(0.5);
         myRank.setDepth(3001);
+        leaderboardElements.push(myRank);
       }
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
@@ -1109,6 +1106,7 @@ export default class SolitaireScene extends Phaser.Scene {
         }
       ).setOrigin(0.5);
       errorText.setDepth(3001);
+      leaderboardElements.push(errorText);
     }
   }
 }
