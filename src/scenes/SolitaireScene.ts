@@ -191,8 +191,8 @@ export default class SolitaireScene extends Phaser.Scene {
     });
     rankText.setOrigin(0, 0);
 
-    // Create corner suit (top-left, below rank)
-    const cornerSuit = this.add.text(-this.CARD_WIDTH / 2 + 10, -this.CARD_HEIGHT / 2 + 32, '', {
+    // Create corner suit (top-left, next to rank)
+    const cornerSuit = this.add.text(-this.CARD_WIDTH / 2 + 38, -this.CARD_HEIGHT / 2 + 10, '', {
       fontSize: '20px',
       color: color === 'red' ? '#ff0000' : '#000000',
       fontFamily: 'Arial, sans-serif',
