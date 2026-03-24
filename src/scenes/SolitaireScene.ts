@@ -20,6 +20,11 @@ interface Pile {
   y: number;
 }
 
+type MoveRecord =
+  | { type: 'draw'; card: Card }
+  | { type: 'recycle'; cardCount: number }
+  | { type: 'move'; cards: Card[]; fromPile: Pile; toPile: Pile; fromIndex: number; flippedCard: Card | null }
+
 export default class SolitaireScene extends Phaser.Scene {
   private readonly CARD_WIDTH = 90;
   private readonly CARD_HEIGHT = 120;
@@ -54,6 +59,12 @@ export default class SolitaireScene extends Phaser.Scene {
   // Auto-complete tracking
   private isAutoCompleting = false;
 
+  // Undo system
+  private moveHistory: MoveRecord[] = [];
+  private undoButton!: Phaser.GameObjects.Text;
+  private isAnimating = false;
+  private gameWon = false;
+
   // Timer tracking
   private gameStartTime: number | null = null;
   private gameEndTime: number | null = null;
@@ -76,6 +87,9 @@ export default class SolitaireScene extends Phaser.Scene {
     this.lastClickedCard = null;
     this.justMovedToFoundation = false;
     this.isAutoCompleting = false;
+    this.moveHistory = [];
+    this.isAnimating = false;
+    this.gameWon = false;
     this.gameStartTime = null;
     this.gameEndTime = null;
     this.timerText = null;
@@ -331,7 +345,7 @@ export default class SolitaireScene extends Phaser.Scene {
     }
   }
 
-  private updateAllCards() {
+  private updateAllCards(skipAutoComplete = false) {
     // First, hide all stock cards (they shouldn't be visible)
     this.stock.forEach(card => {
       card.container.setVisible(false);
@@ -375,7 +389,9 @@ export default class SolitaireScene extends Phaser.Scene {
     this.drawStockPile();
 
     // Check if we should trigger auto-complete
-    this.checkAutoComplete();
+    if (!skipAutoComplete) {
+      this.checkAutoComplete();
+    }
   }
 
   private drawStockPile() {
@@ -466,6 +482,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
       // Disable stock interaction during animation
       this.stockGraphics.disableInteractive();
+      this.isAnimating = true;
 
       // Animate card flipping and moving to waste pile
       this.tweens.add({
@@ -482,8 +499,14 @@ export default class SolitaireScene extends Phaser.Scene {
           }
         },
         onComplete: () => {
+          this.isAnimating = false;
+
           // Add to waste pile
           this.waste.cards.push(card);
+
+          // Record move for undo
+          this.moveHistory.push({ type: 'draw', card });
+          this.updateUndoButton();
 
           // Re-enable stock interaction
           this.stockGraphics.setInteractive(
@@ -505,12 +528,18 @@ export default class SolitaireScene extends Phaser.Scene {
       this.drawStockPile();
     } else if (this.waste.cards.length > 0) {
       // Recycle waste back to stock (reversed order)
+      const cardCount = this.waste.cards.length;
       const wasteCards = [...this.waste.cards];
       this.waste.cards = [];
       this.stock = wasteCards.reverse();
       this.stock.forEach(card => {
         card.faceUp = false;
       });
+
+      // Record move for undo
+      this.moveHistory.push({ type: 'recycle', cardCount });
+      this.updateUndoButton();
+
       this.updateAllCards();
     }
   }
@@ -604,8 +633,18 @@ export default class SolitaireScene extends Phaser.Scene {
       this.gameStartTime = this.time.now;
     }
 
+    // Pre-compute: will a card be flipped after this move?
+    let flippedCard: Card | null = null;
+    if (sourcePile.cards.length > 1) {
+      const belowCard = sourcePile.cards[cardIndex - 1];
+      if (belowCard && !belowCard.faceUp) {
+        flippedCard = belowCard;
+      }
+    }
+
     // Disable interaction on the card during animation
     card.container.disableInteractive();
+    this.isAnimating = true;
 
     // Increase depth so card appears above others during animation
     card.container.setDepth(2000);
@@ -618,11 +657,24 @@ export default class SolitaireScene extends Phaser.Scene {
       duration: 200,
       ease: 'Quad.easeInOut',
       onComplete: async () => {
+        this.isAnimating = false;
+
         // Remove from source pile
         sourcePile.cards.splice(cardIndex, 1);
 
         // Add to foundation
         foundation.cards.push(card);
+
+        // Record move for undo
+        this.moveHistory.push({
+          type: 'move',
+          cards: [card],
+          fromPile: sourcePile,
+          toPile: foundation,
+          fromIndex: cardIndex,
+          flippedCard
+        });
+        this.updateUndoButton();
 
         // Trigger haptic feedback for successful move to foundation
         try {
@@ -775,6 +827,21 @@ export default class SolitaireScene extends Phaser.Scene {
         this.gameStartTime = this.time.now;
       }
 
+      // Pre-compute: will a card be flipped after this move?
+      let flippedCard: Card | null = null;
+      const sourceAfterLength = this.dragStartPile.cards.length - this.draggedCards.length;
+      if (sourceAfterLength > 0) {
+        const willBeTop = this.dragStartPile.cards[sourceAfterLength - 1];
+        if (!willBeTop.faceUp) {
+          flippedCard = willBeTop;
+        }
+      }
+
+      // Save a copy of dragged cards before they get cleared
+      const movedCards = [...this.draggedCards];
+      const fromPile = this.dragStartPile;
+      const fromIndex = this.dragStartIndex;
+
       // Move cards
       this.dragStartPile.cards.splice(this.dragStartIndex, this.draggedCards.length);
       targetPile.cards.push(...this.draggedCards);
@@ -786,6 +853,17 @@ export default class SolitaireScene extends Phaser.Scene {
           topCard.faceUp = true;
         }
       }
+
+      // Record move for undo
+      this.moveHistory.push({
+        type: 'move',
+        cards: movedCards,
+        fromPile,
+        toPile: targetPile,
+        fromIndex,
+        flippedCard
+      });
+      this.updateUndoButton();
 
       this.updateAllCards();
       this.checkWin();
@@ -818,10 +896,82 @@ export default class SolitaireScene extends Phaser.Scene {
     return card.color !== topCard.color && card.rank === topCard.rank - 1;
   }
 
+  private performUndo() {
+    if (this.moveHistory.length === 0) return;
+    if (this.isAnimating) return;
+    if (this.gameWon) return;
+
+    // Stop auto-complete if it's running
+    if (this.isAutoCompleting) {
+      this.isAutoCompleting = false;
+      this.tweens.killAll();
+      // Re-enable interaction on all cards
+      this.tableau.forEach(pile => pile.cards.forEach(card => card.container.setInteractive({ draggable: true })));
+      this.waste.cards.forEach(card => card.container.setInteractive({ draggable: true }));
+      this.foundations.forEach(pile => pile.cards.forEach(card => card.container.setInteractive({ draggable: true })));
+      this.updateAllCards(true);
+      this.updateUndoButton();
+      return;
+    }
+
+    const move = this.moveHistory.pop()!;
+
+    switch (move.type) {
+      case 'draw': {
+        // Undo: remove card from waste, push back to stock, flip face-down
+        const card = this.waste.cards.pop()!;
+        card.faceUp = false;
+        this.stock.push(card);
+        break;
+      }
+
+      case 'recycle': {
+        // Undo: take all cards from stock, reverse, set face-up, put back in waste
+        const cards = this.stock.splice(0);
+        cards.reverse();
+        cards.forEach(card => { card.faceUp = true; });
+        this.waste.cards = cards;
+        break;
+      }
+
+      case 'move': {
+        // If a card was auto-flipped, flip it back face-down
+        if (move.flippedCard) {
+          move.flippedCard.faceUp = false;
+        }
+
+        // Remove the moved cards from the target pile
+        const removeStart = move.toPile.cards.length - move.cards.length;
+        move.toPile.cards.splice(removeStart, move.cards.length);
+
+        // Re-insert into source pile at original position
+        move.fromPile.cards.splice(move.fromIndex, 0, ...move.cards);
+        break;
+      }
+    }
+
+    this.updateAllCards(true);
+    this.updateUndoButton();
+  }
+
+  private updateUndoButton() {
+    if (!this.undoButton) return;
+    if (this.moveHistory.length === 0 || this.gameWon) {
+      this.undoButton.setAlpha(0.4);
+      this.undoButton.disableInteractive();
+    } else {
+      this.undoButton.setAlpha(1);
+      this.undoButton.setInteractive();
+    }
+  }
+
   private async checkWin() {
     const allInFoundations = this.foundations.every(pile => pile.cards.length === 13);
 
     if (allInFoundations) {
+      this.gameWon = true;
+      this.updateUndoButton();
+
       // Record end time
       this.gameEndTime = this.time.now;
 
@@ -1029,8 +1179,22 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private addResetButton() {
+    // Undo button
+    this.undoButton = this.add.text(100, 1500, 'Undo', {
+      fontSize: '32px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+      backgroundColor: '#8e6c1e',
+      padding: { x: 20, y: 10 }
+    }).setOrigin(0.5);
+    this.undoButton.setAlpha(0.4);
+
+    this.undoButton.on('pointerdown', () => {
+      this.performUndo();
+    });
+
     // New Game button
-    const newGameButton = this.add.text(260, 1500, 'New Game', {
+    const newGameButton = this.add.text(300, 1500, 'New Game', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -1043,7 +1207,7 @@ export default class SolitaireScene extends Phaser.Scene {
     });
 
     // Leaderboard button
-    const leaderboardButton = this.add.text(460, 1500, 'Leaderboard', {
+    const leaderboardButton = this.add.text(530, 1500, 'Leaderboard', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
