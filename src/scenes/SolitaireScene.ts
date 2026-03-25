@@ -1034,6 +1034,7 @@ export default class SolitaireScene extends Phaser.Scene {
             duration: 250,
             ease: 'Quad.easeInOut',
             onComplete: () => {
+              card.container.setInteractive({ draggable: true });
               completed++;
               if (completed === move.cards.length) {
                 this.isAnimating = false;
