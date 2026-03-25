@@ -1151,7 +1151,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
   private addTimerDisplay() {
     // Create timer text in bottom right area
-    this.timerText = this.add.text(680, 1450, '0:00', {
+    this.timerText = this.add.text(680, 1330, '0:00', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -1282,7 +1282,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
   private addResetButton() {
     // Undo button
-    this.undoButton = this.add.text(100, 1500, 'Undo', {
+    this.undoButton = this.add.text(100, 1380, 'Undo', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -1296,7 +1296,7 @@ export default class SolitaireScene extends Phaser.Scene {
     });
 
     // New Game button
-    const newGameButton = this.add.text(300, 1500, 'New Game', {
+    const newGameButton = this.add.text(300, 1380, 'New Game', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
@@ -1309,7 +1309,7 @@ export default class SolitaireScene extends Phaser.Scene {
     });
 
     // Leaderboard button
-    const leaderboardButton = this.add.text(530, 1500, 'Leaderboard', {
+    const leaderboardButton = this.add.text(530, 1380, 'Leaderboard', {
       fontSize: '32px',
       color: '#ffffff',
       fontFamily: 'Arial',
