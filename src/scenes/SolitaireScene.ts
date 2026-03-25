@@ -915,29 +915,55 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     const move = this.moveHistory.pop()!;
+    this.isAnimating = true;
 
     switch (move.type) {
       case 'draw': {
-        // Undo: remove card from waste, push back to stock, flip face-down
+        // Animate card from waste back to stock with a reverse flip
         const card = this.waste.cards.pop()!;
-        card.faceUp = false;
-        this.stock.push(card);
+        card.container.setDepth(2000);
+        card.container.disableInteractive();
+
+        this.tweens.add({
+          targets: card.container,
+          x: this.stockX,
+          y: this.stockY,
+          duration: 250,
+          ease: 'Quad.easeOut',
+          onUpdate: (tween) => {
+            // Flip face-down partway through
+            if (tween.progress > 0.3 && card.faceUp) {
+              card.faceUp = false;
+              this.drawCard(card);
+            }
+          },
+          onComplete: () => {
+            this.stock.push(card);
+            this.isAnimating = false;
+            this.updateAllCards(true);
+            this.updateUndoButton();
+          }
+        });
         break;
       }
 
       case 'recycle': {
-        // Undo: take all cards from stock, reverse, set face-up, put back in waste
+        // Instant reverse — no good way to animate many cards flipping back
         const cards = this.stock.splice(0);
         cards.reverse();
         cards.forEach(card => { card.faceUp = true; });
         this.waste.cards = cards;
+        this.isAnimating = false;
+        this.updateAllCards(true);
+        this.updateUndoButton();
         break;
       }
 
       case 'move': {
-        // If a card was auto-flipped, flip it back face-down
+        // If a card was auto-flipped, flip it back face-down first
         if (move.flippedCard) {
           move.flippedCard.faceUp = false;
+          this.drawCard(move.flippedCard);
         }
 
         // Remove the moved cards from the target pile
@@ -946,12 +972,71 @@ export default class SolitaireScene extends Phaser.Scene {
 
         // Re-insert into source pile at original position
         move.fromPile.cards.splice(move.fromIndex, 0, ...move.cards);
+
+        // Compute destination positions for each card in the source pile
+        const targetPositions: { x: number; y: number }[] = [];
+        let currentY = move.fromPile.y;
+        for (let i = 0; i < move.fromPile.cards.length; i++) {
+          if (i >= move.fromIndex && i < move.fromIndex + move.cards.length) {
+            targetPositions.push({ x: move.fromPile.x, y: currentY });
+          }
+          if (i < move.fromPile.cards.length - 1) {
+            currentY += move.fromPile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+          }
+        }
+
+        // Raise cards above everything during animation
+        move.cards.forEach(card => {
+          card.container.setDepth(2000);
+          card.container.disableInteractive();
+        });
+
+        // Immediately update the non-moving piles so they look correct
+        this.updateAllCards(true);
+
+        // Re-raise the moving cards above (updateAllCards reset their depth)
+        move.cards.forEach(card => {
+          card.container.setDepth(2000);
+        });
+
+        // Animate each card to its destination
+        let completed = 0;
+        move.cards.forEach((card, idx) => {
+          const target = targetPositions[idx];
+          // Position card at where it currently is visually (already set by updateAllCards)
+          // But we want it at the toPile position where it just was
+          const fromX = move.toPile.x;
+          let fromY = move.toPile.y;
+          // If the target was a tableau pile, cards would have been stacked
+          const toPileLen = move.toPile.cards.length; // cards already removed
+          // Approximate the visual position the card was at in the target pile
+          fromY = move.toPile.y;
+          for (let i = 0; i < toPileLen; i++) {
+            fromY += move.toPile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+          }
+          fromY += idx * this.STACK_OFFSET_Y;
+
+          card.container.setPosition(fromX, fromY);
+
+          this.tweens.add({
+            targets: card.container,
+            x: target.x,
+            y: target.y,
+            duration: 250,
+            ease: 'Quad.easeInOut',
+            onComplete: () => {
+              completed++;
+              if (completed === move.cards.length) {
+                this.isAnimating = false;
+                this.updateAllCards(true);
+                this.updateUndoButton();
+              }
+            }
+          });
+        });
         break;
       }
     }
-
-    this.updateAllCards(true);
-    this.updateUndoButton();
   }
 
   private updateUndoButton() {
