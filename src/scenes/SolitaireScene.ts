@@ -1184,6 +1184,10 @@ export default class SolitaireScene extends Phaser.Scene {
     const wasteEmpty = this.waste.cards.length === 0;
 
     if (allTableauFaceUp && stockEmpty && wasteEmpty) {
+      // Stop the timer — the game is effectively won
+      if (this.gameEndTime === null) {
+        this.gameEndTime = this.time.now;
+      }
       // Start auto-completing
       this.isAutoCompleting = true;
       this.autoCompleteNextCard();
