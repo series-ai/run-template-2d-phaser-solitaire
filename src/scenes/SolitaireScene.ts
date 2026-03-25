@@ -110,7 +110,7 @@ export default class SolitaireScene extends Phaser.Scene {
   private setupBoard() {
     const padding = 20;
     const startX = padding + this.CARD_WIDTH / 2;
-    const startY = padding + this.CARD_HEIGHT / 2;
+    const startY = padding + this.CARD_HEIGHT / 2 + 80;
 
     // Foundation piles (top right)
     for (let i = 0; i < 4; i++) {
