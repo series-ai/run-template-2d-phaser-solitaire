@@ -1003,18 +1003,18 @@ export default class SolitaireScene extends Phaser.Scene {
         let completed = 0;
         move.cards.forEach((card, idx) => {
           const target = targetPositions[idx];
-          // Position card at where it currently is visually (already set by updateAllCards)
-          // But we want it at the toPile position where it just was
+          // Compute where the card visually was in the toPile before undo
           const fromX = move.toPile.x;
           let fromY = move.toPile.y;
-          // If the target was a tableau pile, cards would have been stacked
-          const toPileLen = move.toPile.cards.length; // cards already removed
-          // Approximate the visual position the card was at in the target pile
-          fromY = move.toPile.y;
-          for (let i = 0; i < toPileLen; i++) {
-            fromY += move.toPile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+          // Only tableau piles fan cards out vertically; foundations and waste stack flat
+          const isTableau = this.tableau.includes(move.toPile);
+          if (isTableau) {
+            const toPileLen = move.toPile.cards.length; // cards already removed
+            for (let i = 0; i < toPileLen; i++) {
+              fromY += move.toPile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+            }
+            fromY += idx * this.STACK_OFFSET_Y;
           }
-          fromY += idx * this.STACK_OFFSET_Y;
 
           card.container.setPosition(fromX, fromY);
 
