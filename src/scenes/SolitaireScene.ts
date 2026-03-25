@@ -973,15 +973,24 @@ export default class SolitaireScene extends Phaser.Scene {
         // Re-insert into source pile at original position
         move.fromPile.cards.splice(move.fromIndex, 0, ...move.cards);
 
-        // Compute destination positions for each card in the source pile
+        // Compute destination positions for each card going back to the source pile
         const targetPositions: { x: number; y: number }[] = [];
-        let currentY = move.fromPile.y;
-        for (let i = 0; i < move.fromPile.cards.length; i++) {
-          if (i >= move.fromIndex && i < move.fromIndex + move.cards.length) {
-            targetPositions.push({ x: move.fromPile.x, y: currentY });
+        const fromIsTableau = this.tableau.includes(move.fromPile);
+        if (fromIsTableau) {
+          // Tableau piles fan cards out vertically
+          let currentY = move.fromPile.y;
+          for (let i = 0; i < move.fromPile.cards.length; i++) {
+            if (i >= move.fromIndex && i < move.fromIndex + move.cards.length) {
+              targetPositions.push({ x: move.fromPile.x, y: currentY });
+            }
+            if (i < move.fromPile.cards.length - 1) {
+              currentY += move.fromPile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+            }
           }
-          if (i < move.fromPile.cards.length - 1) {
-            currentY += move.fromPile.cards[i].faceUp ? this.STACK_OFFSET_Y : this.FACE_DOWN_OFFSET_Y;
+        } else {
+          // Foundations and waste stack flat — all cards at the same position
+          for (let i = 0; i < move.cards.length; i++) {
+            targetPositions.push({ x: move.fromPile.x, y: move.fromPile.y });
           }
         }
 
