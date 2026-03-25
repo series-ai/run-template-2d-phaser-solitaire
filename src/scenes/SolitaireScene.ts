@@ -501,6 +501,9 @@ export default class SolitaireScene extends Phaser.Scene {
         onComplete: () => {
           this.isAnimating = false;
 
+          // Ensure card is interactive (may have been disabled by a prior undo)
+          card.container.setInteractive({ draggable: true });
+
           // Add to waste pile
           this.waste.cards.push(card);
 
