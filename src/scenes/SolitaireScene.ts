@@ -1424,7 +1424,7 @@ export default class SolitaireScene extends Phaser.Scene {
           const maskGraphics = this.add.graphics();
           maskGraphics.fillStyle(0xffffff);
           maskGraphics.fillRect(nameX, yOffset - 20, maxNameWidth, 40);
-          maskGraphics.setDepth(3001);
+          maskGraphics.setVisible(false);
           const mask = maskGraphics.createGeometryMask();
           nameText.setMask(mask);
           leaderboardElements.push(maskGraphics);
