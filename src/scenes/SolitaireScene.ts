@@ -1371,7 +1371,12 @@ export default class SolitaireScene extends Phaser.Scene {
       let yOffset = 180;
       const entries = podiumScores.context.topEntries;
 
-      // Display entries
+      // Display entries with fixed-width columns
+      const rankX = 60;      // Left-aligned rank column
+      const nameX = 110;     // Name column start
+      const timeX = 660;     // Right-aligned time column
+      const maxNameWidth = 420; // Max pixel width for name before marquee
+
       entries.forEach((entry, index) => {
         const rank = index + 1;
         // Convert inverted score back to actual time (86400 - score)
@@ -1386,20 +1391,68 @@ export default class SolitaireScene extends Phaser.Scene {
         else if (rank === 2) rankColor = '#c0c0c0'; // Silver
         else if (rank === 3) rankColor = '#cd7f32'; // Bronze
 
-        const entryText = this.add.text(
-          360,
+        const textStyle = {
+          fontSize: '28px',
+          color: rankColor,
+          fontFamily: 'Arial',
+          stroke: '#000000',
+          strokeThickness: 2
+        };
+
+        // Rank text (right-aligned so single and double digits line up)
+        const rankText = this.add.text(
+          rankX,
           yOffset,
-          `#${rank}  ${entry.username}  ${timeString}`,
-          {
-            fontSize: '28px',
-            color: rankColor,
-            fontFamily: 'Arial',
-            stroke: '#000000',
-            strokeThickness: 2
-          }
-        ).setOrigin(0.5);
-        entryText.setDepth(3001);
-        leaderboardElements.push(entryText);
+          `#${rank}`,
+          textStyle
+        ).setOrigin(1, 0.5);
+        rankText.setDepth(3001);
+        leaderboardElements.push(rankText);
+
+        // Name text (left-aligned, masked if too wide)
+        const nameText = this.add.text(
+          nameX,
+          yOffset,
+          entry.username,
+          textStyle
+        ).setOrigin(0, 0.5);
+        nameText.setDepth(3001);
+        leaderboardElements.push(nameText);
+
+        // If name overflows, mask it and add marquee animation
+        if (nameText.width > maxNameWidth) {
+          const maskGraphics = this.add.graphics();
+          maskGraphics.fillStyle(0xffffff);
+          maskGraphics.fillRect(nameX, yOffset - 20, maxNameWidth, 40);
+          maskGraphics.setDepth(3001);
+          const mask = maskGraphics.createGeometryMask();
+          nameText.setMask(mask);
+          leaderboardElements.push(maskGraphics);
+
+          // Marquee: scroll left then reset, with pauses
+          const overflow = nameText.width - maxNameWidth;
+          this.tweens.add({
+            targets: nameText,
+            x: nameX - overflow,
+            duration: overflow * 20,
+            ease: 'Linear',
+            delay: 1500,
+            yoyo: true,
+            hold: 1500,
+            repeatDelay: 1500,
+            repeat: -1
+          });
+        }
+
+        // Time text (right-aligned)
+        const timeText = this.add.text(
+          timeX,
+          yOffset,
+          timeString,
+          textStyle
+        ).setOrigin(1, 0.5);
+        timeText.setDepth(3001);
+        leaderboardElements.push(timeText);
 
         yOffset += 50;
       });
