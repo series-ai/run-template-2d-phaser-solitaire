@@ -8,3 +8,5 @@ dist-ssr/
 .idea/
 coverage/
 .rundot-docs
+.runstudio/
+game.config.json

@@ -58,6 +58,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
   // Auto-complete tracking
   private isAutoCompleting = false;
+  private isLeaderboardOpen = false;
 
   // Undo system
   private moveHistory: MoveRecord[] = [];
@@ -1054,7 +1055,7 @@ export default class SolitaireScene extends Phaser.Scene {
 
   private updateUndoButton() {
     if (!this.undoButton) return;
-    if (this.moveHistory.length === 0 || this.gameWon) {
+    if (this.moveHistory.length === 0 || this.gameWon || this.isAutoCompleting) {
       this.undoButton.setAlpha(0.4);
       this.undoButton.disableInteractive();
     } else {
@@ -1101,7 +1102,7 @@ export default class SolitaireScene extends Phaser.Scene {
       // Submit score to leaderboard (invert so lower time = higher score)
       // Max possible time is 86400 seconds (24 hours), so we invert: 86400 - actualTime
       try {
-        const invertedScore = 86400 - elapsedSeconds;
+        const invertedScore = Math.max(0, 86400 - elapsedSeconds);
         const result = await RundotGameAPI.leaderboard.submitScore({
           score: invertedScore,
           duration: elapsedSeconds
@@ -1323,6 +1324,9 @@ export default class SolitaireScene extends Phaser.Scene {
   }
 
   private async showLeaderboard() {
+    if (this.isLeaderboardOpen) return;
+    this.isLeaderboardOpen = true;
+
     // Create dark overlay
     const overlay = this.add.rectangle(360, 800, 720, 1600, 0x000000, 0.85);
     overlay.setOrigin(0.5);
@@ -1353,6 +1357,7 @@ export default class SolitaireScene extends Phaser.Scene {
     closeButton.on('pointerdown', () => {
       // Destroy all leaderboard elements
       leaderboardElements.forEach(element => element.destroy());
+      this.isLeaderboardOpen = false;
     });
 
     try {
