@@ -66,6 +66,13 @@ export default class SolitaireScene extends Phaser.Scene {
   private isAnimating = false;
   private gameWon = false;
 
+  // Analytics first-only guards
+  private firstFoundationCardFired = false;
+  private funnelStep1Fired = false;
+  private funnelStep2Fired = false;
+  private funnelStep3Fired = false;
+  private funnelStep4Fired = false;
+
   // Timer tracking
   private gameStartTime: number | null = null;
   private gameEndTime: number | null = null;
@@ -94,6 +101,11 @@ export default class SolitaireScene extends Phaser.Scene {
     this.gameStartTime = null;
     this.gameEndTime = null;
     this.timerText = null;
+    this.firstFoundationCardFired = false;
+    this.funnelStep1Fired = false;
+    this.funnelStep2Fired = false;
+    this.funnelStep3Fired = false;
+    this.funnelStep4Fired = false;
 
     // Set up the game board
     this.setupBoard();
@@ -202,6 +214,12 @@ export default class SolitaireScene extends Phaser.Scene {
 
     // Update all visuals
     this.updateAllCards();
+
+    RundotGameAPI.analytics.recordCustomEvent('game_dealt');
+    if (!this.funnelStep1Fired) {
+      this.funnelStep1Fired = true;
+      RundotGameAPI.analytics.trackFunnelStep(1, 'game_dealt', 'match', 1);
+    }
   }
 
   private createCard(suit: string, rank: number, color: 'red' | 'black', hexColor: string): Card {
@@ -472,6 +490,7 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     if (this.stock.length > 0) {
+      RundotGameAPI.analytics.recordCustomEvent('stock_drawn');
       const card = this.stock.pop()!;
 
       // Position card at stock pile initially
@@ -512,6 +531,13 @@ export default class SolitaireScene extends Phaser.Scene {
           this.moveHistory.push({ type: 'draw', card });
           this.updateUndoButton();
 
+          RundotGameAPI.analytics.recordCustomEvent('card_moved', {
+            from_pile: 'stock',
+            to_pile: 'waste',
+            rank: card.rank,
+            suit: card.suit,
+          });
+
           // Re-enable stock interaction
           this.stockGraphics.setInteractive(
             new Phaser.Geom.Rectangle(
@@ -543,6 +569,12 @@ export default class SolitaireScene extends Phaser.Scene {
       // Record move for undo
       this.moveHistory.push({ type: 'recycle', cardCount });
       this.updateUndoButton();
+
+      RundotGameAPI.analytics.recordCustomEvent('stock_recycled');
+      if (!this.funnelStep3Fired) {
+        this.funnelStep3Fired = true;
+        RundotGameAPI.analytics.trackFunnelStep(3, 'stock_recycled', 'match', 1);
+      }
 
       this.updateAllCards();
     }
@@ -679,6 +711,21 @@ export default class SolitaireScene extends Phaser.Scene {
           flippedCard
         });
         this.updateUndoButton();
+
+        RundotGameAPI.analytics.recordCustomEvent('card_moved', {
+          from_pile: this.pileKind(sourcePile),
+          to_pile: 'foundation',
+          rank: card.rank,
+          suit: card.suit,
+        });
+        if (!this.firstFoundationCardFired) {
+          this.firstFoundationCardFired = true;
+          RundotGameAPI.analytics.recordCustomEvent('first_foundation_card');
+        }
+        if (!this.funnelStep2Fired) {
+          this.funnelStep2Fired = true;
+          RundotGameAPI.analytics.trackFunnelStep(2, 'first_foundation_card', 'match', 1);
+        }
 
         // Trigger haptic feedback for successful move to foundation
         try {
@@ -869,6 +916,24 @@ export default class SolitaireScene extends Phaser.Scene {
       });
       this.updateUndoButton();
 
+      const toKind = this.pileKind(targetPile);
+      RundotGameAPI.analytics.recordCustomEvent('card_moved', {
+        from_pile: this.pileKind(fromPile),
+        to_pile: toKind,
+        rank: topCard.rank,
+        suit: topCard.suit,
+      });
+      if (toKind === 'foundation') {
+        if (!this.firstFoundationCardFired) {
+          this.firstFoundationCardFired = true;
+          RundotGameAPI.analytics.recordCustomEvent('first_foundation_card');
+        }
+        if (!this.funnelStep2Fired) {
+          this.funnelStep2Fired = true;
+          RundotGameAPI.analytics.trackFunnelStep(2, 'first_foundation_card', 'match', 1);
+        }
+      }
+
       this.updateAllCards();
       this.checkWin();
     } else {
@@ -900,6 +965,13 @@ export default class SolitaireScene extends Phaser.Scene {
     return card.color !== topCard.color && card.rank === topCard.rank - 1;
   }
 
+  private pileKind(pile: Pile): 'tableau' | 'foundation' | 'stock' | 'waste' {
+    if (this.tableau.includes(pile)) return 'tableau';
+    if (this.foundations.includes(pile)) return 'foundation';
+    if (pile === this.waste) return 'waste';
+    return 'stock';
+  }
+
   private performUndo() {
     if (this.moveHistory.length === 0) return;
     if (this.isAnimating) return;
@@ -919,6 +991,9 @@ export default class SolitaireScene extends Phaser.Scene {
     }
 
     const move = this.moveHistory.pop()!;
+    RundotGameAPI.analytics.recordCustomEvent('undo_used', {
+      history_depth: this.moveHistory.length + 1,
+    });
     this.isAnimating = true;
 
     switch (move.type) {
@@ -1076,6 +1151,14 @@ export default class SolitaireScene extends Phaser.Scene {
 
       // Calculate elapsed time
       const elapsedMs = this.gameStartTime !== null ? this.gameEndTime - this.gameStartTime : 0;
+      RundotGameAPI.analytics.recordCustomEvent('game_won', {
+        time_ms: elapsedMs,
+        moves: this.moveHistory.length,
+      });
+      if (!this.funnelStep4Fired) {
+        this.funnelStep4Fired = true;
+        RundotGameAPI.analytics.trackFunnelStep(4, 'game_won', 'match', 1);
+      }
       const elapsedSeconds = Math.floor(elapsedMs / 1000);
       const minutes = Math.floor(elapsedSeconds / 60);
       const seconds = elapsedSeconds % 60;
@@ -1107,6 +1190,9 @@ export default class SolitaireScene extends Phaser.Scene {
           score: invertedScore,
           duration: elapsedSeconds
         });
+        RundotGameAPI.analytics.recordCustomEvent('leaderboard_submit_success', {
+          score: invertedScore,
+        });
 
         // Display rank
         this.add.text(360, 930, `Rank: #${result.rank}`, {
@@ -1117,6 +1203,9 @@ export default class SolitaireScene extends Phaser.Scene {
           strokeThickness: 3
         }).setOrigin(0.5);
       } catch (error) {
+        RundotGameAPI.analytics.recordCustomEvent('leaderboard_submit_failure', {
+          message: String(error),
+        });
         console.warn('Failed to submit leaderboard score:', error);
       }
 
@@ -1191,6 +1280,7 @@ export default class SolitaireScene extends Phaser.Scene {
       }
       // Start auto-completing
       this.isAutoCompleting = true;
+      RundotGameAPI.analytics.recordCustomEvent('auto_complete_started');
       this.autoCompleteNextCard();
     }
   }

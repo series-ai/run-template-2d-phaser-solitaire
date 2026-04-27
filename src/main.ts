@@ -3,6 +3,21 @@ import SolitaireScene from './scenes/SolitaireScene';
 import './style.css';
 import RundotGameAPI from "@series-inc/rundot-game-sdk/api";
 
+RundotGameAPI.analytics.recordCustomEvent('game_loaded');
+
+RundotGameAPI.lifecycles.onPause(() => {
+  RundotGameAPI.analytics.recordCustomEvent('game_paused');
+});
+RundotGameAPI.lifecycles.onResume(() => {
+  RundotGameAPI.analytics.recordCustomEvent('game_resumed');
+});
+RundotGameAPI.lifecycles.onSleep(() => {
+  RundotGameAPI.analytics.recordCustomEvent('game_sleep');
+});
+RundotGameAPI.lifecycles.onQuit(() => {
+  RundotGameAPI.analytics.recordCustomEvent('game_quit');
+});
+
 async function bootstrap(): Promise<void> {
   try {
     // Create Phaser game
