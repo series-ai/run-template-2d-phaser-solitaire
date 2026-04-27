@@ -30,5 +30,10 @@
   "dependencies": {
     "@series-inc/rundot-game-sdk": "^5.9.9",
     "phaser": "^3.90.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@series-inc/rundot-game-sdk"
+    ]
   }
 }
