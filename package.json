@@ -21,6 +21,7 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "devDependencies": {
     "@babel/parser": "^7.26.3",
+    "@revenuecat/purchases-js": "^1.39.1",
     "@types/node": "^24.3.0",
     "cross-env": "^7.0.3",
     "firebase": "^12.12.1",
